@@ -161,13 +161,11 @@ export default function Profile({ setActivePage }) {
         </div>
 
         <p>
-          The goal of this project is to convert
-          handwritten information into digital data
-          using Artificial Intelligence and Machine
-          Learning. The system is designed to start
-          with handwritten digits and gradually expand
-          toward characters, words, complete text and
-          intelligent document understanding.
+          The goal of this project is to recognize handwritten digits
+    from 0 to 9 using Artificial Intelligence and Machine Learning.
+    Users can draw a digit or upload a handwritten digit image.
+    The system predicts the corresponding digit and displays
+    its prediction confidence score.
         </p>
 
       </div>

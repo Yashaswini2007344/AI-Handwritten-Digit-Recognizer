@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Eraser, RotateCcw, Sparkles } from "lucide-react";
+import { Eraser, RotateCcw } from "lucide-react";
 
 function DrawCanvas({
   mode = "digit",
@@ -8,13 +8,13 @@ function DrawCanvas({
 }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   const getTitle = () => {
     if (mode === "digit") return "Draw a Digit";
     if (mode === "character") return "Draw a Character";
     if (mode === "word") return "Draw a Word";
     if (mode === "text") return "Draw Text";
-
     return "Draw a Digit";
   };
 
@@ -43,7 +43,6 @@ function DrawCanvas({
     if (mode === "character") return "A – Z";
     if (mode === "word") return "WORD";
     if (mode === "text") return "TEXT";
-
     return "0 – 9";
   };
 
@@ -87,15 +86,19 @@ function DrawCanvas({
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // White drawing background
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, rect.width, rect.height);
 
-    // Drawing pen
-    ctx.strokeStyle = "#111827";
-    ctx.lineWidth = 5;
+    ctx.strokeStyle = "#000000";
+
+    // Digit = 12px
+    // Character = 13px for clearer handwriting
+    // Word/Text = 13px
+    ctx.lineWidth = mode === "digit" ? 12 : 13;
+
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
+    ctx.imageSmoothingEnabled = true;
   };
 
   useEffect(() => {
@@ -118,7 +121,7 @@ function DrawCanvas({
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [mode]);
 
   const getPosition = (event) => {
     const canvas = canvasRef.current;
@@ -175,37 +178,220 @@ function DrawCanvas({
     ctx.stroke();
   };
 
-  const stopDrawing = () => {
+  /*
+   * Convert handwriting into a more MNIST-like image.
+   *
+   * Steps:
+   * 1. Find handwritten area
+   * 2. Crop empty background
+   * 3. Add controlled padding
+   * 4. Resize handwriting
+   * 5. Put handwriting inside 28x28 canvas
+   * 6. Calculate center of mass
+   * 7. Move handwriting toward the center
+   * 8. Export as PNG
+   */
+   
+  const createCleanImageFile = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    const data = ctx.getImageData(
+      0, 0, canvas.width, canvas.height
+    ).data;
+
+    let minX = canvas.width;
+    let minY = canvas.height;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        const i = (y * canvas.width + x) * 4;
+        const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+
+        if (brightness < 200) {
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+    }
+
+    if (maxX === -1) return null;
+
+    const cropWidth = maxX - minX + 1;
+    const cropHeight = maxY - minY + 1;
+
+    // MULTI-DIGIT: keep the full number image
+    if (mode === "multi_digit") {
+      const padding = Math.max(
+        20,
+        Math.round(Math.max(cropWidth, cropHeight) * 0.12)
+      );
+
+      const outputCanvas = document.createElement("canvas");
+      outputCanvas.width = cropWidth + padding * 2;
+      outputCanvas.height = cropHeight + padding * 2;
+
+      const outputCtx = outputCanvas.getContext("2d");
+      if (!outputCtx) return null;
+
+      outputCtx.fillStyle = "#ffffff";
+      outputCtx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+
+      outputCtx.drawImage(
+        canvas,
+        minX, minY, cropWidth, cropHeight,
+        padding, padding, cropWidth, cropHeight
+      );
+
+      setPreviewUrl(outputCanvas.toDataURL("image/png"));
+
+      return new Promise((resolve) => {
+        outputCanvas.toBlob((blob) => {
+          if (!blob) return resolve(null);
+
+          resolve(new File([blob], "multi-digit-handwriting.png", {
+            type: "image/png",
+          }));
+        }, "image/png");
+      });
+    }
+
+    // SINGLE DIGIT: keep 28x28 preprocessing
+    const padding = Math.floor(
+      Math.max(cropWidth, cropHeight) * 0.20
+    );
+
+    const paddedWidth = cropWidth + padding * 2;
+    const paddedHeight = cropHeight + padding * 2;
+    const squareSize = Math.max(paddedWidth, paddedHeight);
+
+    const squareCanvas = document.createElement("canvas");
+    squareCanvas.width = squareSize;
+    squareCanvas.height = squareSize;
+
+    const squareCtx = squareCanvas.getContext("2d");
+    if (!squareCtx) return null;
+
+    squareCtx.fillStyle = "#ffffff";
+    squareCtx.fillRect(0, 0, squareSize, squareSize);
+
+    squareCtx.drawImage(
+      canvas,
+      minX, minY, cropWidth, cropHeight,
+      Math.floor((squareSize - cropWidth) / 2),
+      Math.floor((squareSize - cropHeight) / 2),
+      cropWidth, cropHeight
+    );
+
+    const finalCanvas = document.createElement("canvas");
+    finalCanvas.width = 28;
+    finalCanvas.height = 28;
+
+    const finalCtx = finalCanvas.getContext("2d");
+    if (!finalCtx) return null;
+
+    finalCtx.fillStyle = "#ffffff";
+    finalCtx.fillRect(0, 0, 28, 28);
+    finalCtx.imageSmoothingEnabled = true;
+
+    // Resize to 20x20 and place in the 28x28 image
+    const digitCanvas = document.createElement("canvas");
+    digitCanvas.width = 20;
+    digitCanvas.height = 20;
+
+    const digitCtx = digitCanvas.getContext("2d");
+    if (!digitCtx) return null;
+
+    digitCtx.fillStyle = "#ffffff";
+    digitCtx.fillRect(0, 0, 20, 20);
+    digitCtx.imageSmoothingEnabled = true;
+
+    digitCtx.drawImage(squareCanvas, 0, 0, 20, 20);
+    finalCtx.drawImage(digitCanvas, 4, 4);
+
+    // Center the digit
+    const pixels = finalCtx.getImageData(0, 0, 28, 28).data;
+    let totalWeight = 0;
+    let weightedX = 0;
+    let weightedY = 0;
+
+    for (let y = 0; y < 28; y++) {
+      for (let x = 0; x < 28; x++) {
+        const i = (y * 28 + x) * 4;
+        const brightness = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+        const weight = Math.max(0, 255 - brightness);
+
+        if (weight > 15) {
+          totalWeight += weight;
+          weightedX += x * weight;
+          weightedY += y * weight;
+        }
+      }
+    }
+
+    if (totalWeight > 0) {
+      const shiftX = Math.max(-3, Math.min(3,
+        Math.round(13.5 - weightedX / totalWeight)
+      ));
+      const shiftY = Math.max(-3, Math.min(3,
+        Math.round(13.5 - weightedY / totalWeight)
+      ));
+
+      if (shiftX !== 0 || shiftY !== 0) {
+        const centered = document.createElement("canvas");
+        centered.width = 28;
+        centered.height = 28;
+
+        const centeredCtx = centered.getContext("2d");
+        if (centeredCtx) {
+          centeredCtx.fillStyle = "#ffffff";
+          centeredCtx.fillRect(0, 0, 28, 28);
+          centeredCtx.drawImage(finalCanvas, shiftX, shiftY);
+
+          finalCtx.fillStyle = "#ffffff";
+          finalCtx.fillRect(0, 0, 28, 28);
+          finalCtx.drawImage(centered, 0, 0);
+        }
+      }
+    }
+
+    setPreviewUrl(finalCanvas.toDataURL("image/png"));
+
+    return new Promise((resolve) => {
+      finalCanvas.toBlob((blob) => {
+        if (!blob) return resolve(null);
+
+        resolve(new File([blob], "digit-handwriting.png", {
+          type: "image/png",
+        }));
+      }, "image/png");
+    });
+  };
+  const stopDrawing = async () => {
     if (!isDrawing) return;
 
     setIsDrawing(false);
 
-    const canvas = canvasRef.current;
+    const file =
+      await createCleanImageFile();
 
-    if (!canvas) return;
+    if (!file) return;
 
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) return;
-
-        const file = new File(
-          [blob],
-          `${mode}-handwriting.png`,
-          {
-            type: "image/png",
-          }
-        );
-
-        if (onFileReady) {
-          onFileReady(file, mode);
-        }
-      },
-      "image/png"
-    );
+    if (onFileReady) {
+      onFileReady(file, mode);
+    }
   };
 
   const clearCanvas = () => {
     setIsDrawing(false);
+    setPreviewUrl(null);
 
     setupCanvas();
 
@@ -216,6 +402,7 @@ function DrawCanvas({
 
   const restartCanvas = () => {
     setIsDrawing(false);
+    setPreviewUrl(null);
 
     setupCanvas();
 
@@ -520,6 +707,50 @@ function DrawCanvas({
             color: #60a5fa;
           }
 
+          .ai-input-preview {
+            margin: 14px 0 4px;
+            padding: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 14px;
+            background: rgba(15, 23, 42, 0.72);
+          }
+
+          .ai-input-preview-title {
+            margin-bottom: 10px;
+            color: #f8fafc;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.9px;
+          }
+
+          .ai-input-preview-box {
+            width: 140px;
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            border-radius: 10px;
+            background: #000000;
+          }
+
+          .ai-input-preview-image {
+            width: 140px;
+            height: 140px;
+            display: block;
+            object-fit: contain;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+          }
+
+          .ai-input-preview-note {
+            margin-top: 9px;
+            color: #94a3b8;
+            font-size: 11px;
+            line-height: 1.45;
+          }
+
           @media (max-width: 700px) {
             .ai-draw-title {
               font-size: 24px;
@@ -548,7 +779,6 @@ function DrawCanvas({
 
       <div className="ai-draw-panel">
 
-        {/* HEADER */}
         <div className="ai-draw-header">
           <div className="ai-draw-heading">
 
@@ -568,7 +798,6 @@ function DrawCanvas({
           </div>
         </div>
 
-        {/* CANVAS */}
         <div className="ai-canvas-shell">
 
           <div className="ai-canvas-topbar">
@@ -604,7 +833,28 @@ function DrawCanvas({
 
           </div>
 
-          {/* BOTTOM AREA */}
+          {previewUrl && (
+            <div className="ai-input-preview">
+
+              <div className="ai-input-preview-title">
+                 AI INPUT PREVIEW — {mode === "multi_digit" ? "FULL NUMBER" : "28 × 28"}
+              </div>
+
+              <div className="ai-input-preview-box">
+                <img
+                  src={previewUrl}
+                  alt="Processed 28x28 AI input"
+                  className="ai-input-preview-image"
+                />
+              </div>
+
+              <div className="ai-input-preview-note">
+                This is the exact processed image sent to the AI model.
+              </div>
+
+            </div>
+          )}
+
           <div className="ai-canvas-bottom">
 
             <div className="ai-canvas-hint">
@@ -637,7 +887,8 @@ function DrawCanvas({
           </div>
 
         </div>
-      </div>
+
+      </div> 
     </>
   );
 }

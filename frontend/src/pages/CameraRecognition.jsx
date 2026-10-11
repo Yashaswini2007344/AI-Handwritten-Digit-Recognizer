@@ -1,49 +1,88 @@
-
 import { useEffect, useRef, useState } from "react";
 import {
   Camera,
   CameraOff,
   RotateCcw,
-  ScanLine,
-  CheckCircle2,
+  Sparkles,
+  Loader2,
   AlertCircle,
-  ArrowLeft,
+  CheckCircle2,
 } from "lucide-react";
+
+const API_URL = "http://127.0.0.1:5000/api/predict";
 
 export default function CameraRecognition({ setActivePage }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
-  const captureTimerRef = useRef(null);
 
   const [cameraOn, setCameraOn] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("Camera is OFF");
-  const [error, setError] = useState("");
-  const [countdown, setCountdown] = useState(0);
 
-  // ==========================================
+  const [prediction, setPrediction] = useState(null);
+  const [confidence, setConfidence] = useState(null);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // =================================================
+  // ATTACH CAMERA STREAM TO VIDEO
+  // =================================================
+
+  useEffect(() => {
+    const attachStream = async () => {
+      if (!cameraOn) {
+        return;
+      }
+
+      const video = videoRef.current;
+      const stream = streamRef.current;
+
+      if (!video || !stream) {
+        return;
+      }
+
+      try {
+        video.srcObject = stream;
+
+        await video.play();
+
+        console.log(
+          "Camera stream attached successfully."
+        );
+      } catch (err) {
+        console.error(
+          "Video play error:",
+          err
+        );
+
+        setError(
+          "Unable to display the camera preview."
+        );
+      }
+    };
+
+    attachStream();
+  }, [cameraOn]);
+
+  // =================================================
   // START CAMERA
-  // ==========================================
+  // =================================================
 
   const startCamera = async () => {
-    setLoading(true);
     setError("");
+    setPrediction(null);
+    setConfidence(null);
     setCapturedImage(null);
-    setCountdown(0);
-    setMessage("Opening camera...");
 
     try {
-      if (
-        !navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia
-      ) {
+      if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error(
-          "Camera is not supported by this browser."
+          "Camera access is not supported by this browser."
         );
       }
 
+      // Stop previous stream
       if (streamRef.current) {
         streamRef.current
           .getTracks()
@@ -56,10 +95,10 @@ export default function CameraRecognition({ setActivePage }) {
         await navigator.mediaDevices.getUserMedia({
           video: {
             width: {
-              ideal: 1280,
+              ideal: 640,
             },
             height: {
-              ideal: 720,
+              ideal: 480,
             },
             facingMode: "user",
           },
@@ -68,92 +107,33 @@ export default function CameraRecognition({ setActivePage }) {
 
       streamRef.current = stream;
 
-      const video = videoRef.current;
-
-      if (!video) {
-        throw new Error(
-          "Video element not found."
-        );
-      }
-
-      video.srcObject = stream;
-
-      await new Promise((resolve) => {
-        if (video.readyState >= 2) {
-          resolve();
-        } else {
-          video.onloadedmetadata = resolve;
-        }
-      });
-
-      await video.play();
+      console.log(
+        "Camera stream received:",
+        stream
+      );
 
       setCameraOn(true);
-
-      setMessage(
-        "Camera is ON — show handwriting inside the frame."
-      );
-
-      setError("");
-
-      console.log(
-        "Camera started:",
-        video.videoWidth,
-        video.videoHeight
-      );
-
-      setLoading(false);
-
-      // ======================================
-      // AUTOMATIC CAPTURE
-      // ======================================
-
-      let seconds = 2;
-
-      setCountdown(seconds);
-
-      setMessage(
-        "Handwriting detected area will be captured automatically..."
-      );
-
-      captureTimerRef.current =
-        setInterval(() => {
-          seconds--;
-
-          setCountdown(seconds);
-
-          if (seconds <= 0) {
-            clearInterval(
-              captureTimerRef.current
-            );
-
-            captureTimerRef.current = null;
-
-            captureHandwriting();
-          }
-        }, 1000);
     } catch (err) {
       console.error(
-        "CAMERA ERROR:",
+        "Camera error:",
         err
       );
 
-      setLoading(false);
-      setCameraOn(false);
-
-      if (
-        err?.name ===
-        "NotAllowedError"
-      ) {
+      if (err?.name === "NotAllowedError") {
         setError(
-          "Camera permission denied. Allow camera permission in Chrome."
+          "Camera permission was denied. Please allow camera access."
         );
-      } else if (
-        err?.name ===
-        "NotFoundError"
-      ) {
+      } else if (err?.name === "NotFoundError") {
         setError(
-          "Camera not found."
+          "No camera was found on this device."
+        );
+      } else if (err?.name === "NotReadableError") {
+        setError(
+          "Camera is already being used by another application."
+        );
+      } else if (err?.name === "OverconstrainedError") {
+        setError(
+          "The requested camera settings are not supported."
         );
       } else {
         setError(
@@ -162,18 +142,38 @@ export default function CameraRecognition({ setActivePage }) {
         );
       }
 
-      setMessage("Camera is OFF");
+      setCameraOn(false);
     }
   };
 
-  // ==========================================
-  // CAPTURE HANDWRITING
-  // ==========================================
+  // =================================================
+  // STOP CAMERA
+  // =================================================
 
-  const captureHandwriting = () => {
-    console.log(
-      "AUTOMATIC CAPTURE STARTED"
-    );
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current
+        .getTracks()
+        .forEach((track) => track.stop());
+
+      streamRef.current = null;
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setCameraOn(false);
+  };
+
+  // =================================================
+  // CAPTURE IMAGE
+  // =================================================
+
+  const captureImage = () => {
+    setError("");
+    setPrediction(null);
+    setConfidence(null);
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -185,387 +185,329 @@ export default function CameraRecognition({ setActivePage }) {
       return;
     }
 
-    const videoWidth =
-      video.videoWidth;
-
-    const videoHeight =
-      video.videoHeight;
-
     if (
-      videoWidth <= 0 ||
-      videoHeight <= 0
+      video.readyState <
+      HTMLMediaElement.HAVE_CURRENT_DATA
     ) {
       setError(
-        "Camera image is not ready."
+        "Camera image is not ready yet. Please wait a moment and try again."
       );
       return;
     }
 
-    try {
-      const cropWidth =
-        Math.floor(
-          videoWidth * 0.70
-        );
+    const videoWidth =
+      video.videoWidth || 640;
 
-      const cropHeight =
-        Math.floor(
-          videoHeight * 0.70
-        );
+    const videoHeight =
+      video.videoHeight || 480;
 
-      const cropX =
-        Math.floor(
-          (videoWidth -
-            cropWidth) / 2
-        );
+    if (
+      videoWidth === 0 ||
+      videoHeight === 0
+    ) {
+      setError(
+        "Camera frame is not available yet. Please try again."
+      );
+      return;
+    }
 
-      const cropY =
-        Math.floor(
-          (videoHeight -
-            cropHeight) / 2
-        );
+    // =================================================
+    // CAPTURE CENTER AREA
+    // =================================================
 
-      canvas.width = cropWidth;
-      canvas.height = cropHeight;
+    const cropWidth =
+      Math.floor(videoWidth * 0.70);
 
-      const ctx =
-        canvas.getContext("2d");
+    const cropHeight =
+      Math.floor(videoHeight * 0.75);
 
-      if (!ctx) {
-        throw new Error(
-          "Canvas could not be created."
-        );
-      }
-
-      ctx.clearRect(
-        0,
-        0,
-        cropWidth,
-        cropHeight
+    const cropX =
+      Math.floor(
+        (videoWidth - cropWidth) / 2
       );
 
-      ctx.drawImage(
-        video,
-        cropX,
-        cropY,
-        cropWidth,
-        cropHeight,
-        0,
-        0,
-        cropWidth,
-        cropHeight
+    const cropY =
+      Math.floor(
+        (videoHeight - cropHeight) / 2
       );
 
-      const image =
-        canvas.toDataURL(
-          "image/jpeg",
-          0.95
-        );
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
 
-      if (
-        !image ||
-        image.length < 500
-      ) {
-        throw new Error(
-          "Image capture failed."
-        );
-      }
+    const ctx =
+      canvas.getContext("2d");
 
-      setCapturedImage(image);
+    if (!ctx) {
+      setError(
+        "Unable to capture camera image."
+      );
+      return;
+    }
 
-      setCountdown(0);
+    ctx.clearRect(
+      0,
+      0,
+      cropWidth,
+      cropHeight
+    );
 
-      setMessage(
-        "Handwriting captured successfully!"
+    ctx.drawImage(
+      video,
+      cropX,
+      cropY,
+      cropWidth,
+      cropHeight,
+      0,
+      0,
+      cropWidth,
+      cropHeight
+    );
+
+    const imageData =
+      canvas.toDataURL(
+        "image/png",
+        1.0
       );
 
+    setCapturedImage(
+      imageData
+    );
+
+    stopCamera();
+  };
+
+  // =================================================
+  // RECOGNIZE DIGIT
+  // =================================================
+
+  const recognizeDigit =
+    async () => {
       setError("");
 
-      if (streamRef.current) {
-        streamRef.current
-          .getTracks()
-          .forEach((track) => {
-            track.stop();
-          });
-
-        streamRef.current = null;
+      if (!capturedImage) {
+        setError(
+          "Please capture an image first."
+        );
+        return;
       }
 
-      if (video) {
-        video.pause();
-        video.srcObject = null;
+      setLoading(true);
+      setPrediction(null);
+      setConfidence(null);
+
+      try {
+        // Convert base64 image to Blob
+        const response =
+          await fetch(
+            capturedImage
+          );
+
+        const blob =
+          await response.blob();
+
+        const file =
+          new File(
+            [blob],
+            "camera-digit.png",
+            {
+              type: "image/png",
+            }
+          );
+
+        const formData =
+          new FormData();
+
+        formData.append(
+          "image",
+          file
+        );
+
+        formData.append(
+          "mode",
+          "digit"
+        );
+
+        // Send image to Flask
+        const apiResponse =
+          await fetch(
+            API_URL,
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+
+        if (!apiResponse.ok) {
+          let message =
+            `Backend error (${apiResponse.status})`;
+
+          try {
+            const data =
+              await apiResponse.json();
+
+            if (data?.message) {
+              message =
+                data.message;
+            }
+
+            if (data?.error) {
+              message =
+                data.error;
+            }
+          } catch {
+            // Ignore JSON error
+          }
+
+          throw new Error(
+            message
+          );
+        }
+
+        const data =
+          await apiResponse.json();
+
+        console.log(
+          "Camera API response:",
+          data
+        );
+
+        const predictedDigit =
+          data?.digit ??
+          data?.prediction ??
+          data?.label ??
+          data?.result;
+
+        if (
+          predictedDigit ===
+            undefined ||
+          predictedDigit === null
+        ) {
+          throw new Error(
+            "Backend response does not contain a valid digit prediction."
+          );
+        }
+
+        const confidenceValue =
+          Number(
+            data?.confidence ??
+              data?.score ??
+              0
+          );
+
+        // =================================================
+        // ALWAYS SHOW PREDICTED NUMBER
+        // No confidence threshold
+        // =================================================
+
+        setPrediction(
+          predictedDigit
+        );
+
+        setConfidence(
+          Number.isFinite(
+            confidenceValue
+          )
+            ? confidenceValue
+            : 0
+        );
+      } catch (err) {
+        console.error(
+          "Prediction error:",
+          err
+        );
+
+        if (
+          err instanceof TypeError ||
+          err?.message?.includes(
+            "Failed to fetch"
+          )
+        ) {
+          setError(
+            "Backend is not connected. Please start the Python Flask server."
+          );
+        } else {
+          setError(
+            err?.message ||
+              "Unable to recognize the digit."
+          );
+        }
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setCameraOn(false);
-
-      console.log(
-        "AUTOMATIC CAPTURE SUCCESS"
-      );
-    } catch (err) {
-      console.error(
-        "CAPTURE ERROR:",
-        err
-      );
-
-      setError(
-        err?.message ||
-          "Unable to capture handwriting."
-      );
-    }
-  };
-
-  // ==========================================
-  // STOP CAMERA
-  // ==========================================
-
-  const stopCamera = () => {
-    if (captureTimerRef.current) {
-      clearInterval(
-        captureTimerRef.current
-      );
-
-      captureTimerRef.current = null;
-    }
-
-    if (streamRef.current) {
-      streamRef.current
-        .getTracks()
-        .forEach((track) => {
-          track.stop();
-        });
-
-      streamRef.current = null;
-    }
-
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.srcObject = null;
-    }
-
-    setCameraOn(false);
-    setCountdown(0);
-    setMessage("Camera is OFF");
-  };
-
-  // ==========================================
+  // =================================================
   // RETAKE
-  // ==========================================
+  // =================================================
 
-  const retake = () => {
+  const retake = async () => {
     setCapturedImage(null);
+    setPrediction(null);
+    setConfidence(null);
     setError("");
-    setCountdown(0);
 
-    startCamera();
+    await startCamera();
   };
 
-  // ==========================================
-  // RESET
-  // ==========================================
-
-  const reset = () => {
-    if (captureTimerRef.current) {
-      clearInterval(
-        captureTimerRef.current
-      );
-
-      captureTimerRef.current = null;
-    }
-
-    if (streamRef.current) {
-      streamRef.current
-        .getTracks()
-        .forEach((track) => {
-          track.stop();
-        });
-
-      streamRef.current = null;
-    }
-
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.srcObject = null;
-    }
-
-    setCameraOn(false);
-    setCapturedImage(null);
-    setCountdown(0);
-    setError("");
-    setMessage("Camera is OFF");
-  };
-
-  // ==========================================
+  // =================================================
   // CLEANUP
-  // ==========================================
+  // =================================================
 
   useEffect(() => {
     return () => {
-      if (captureTimerRef.current) {
-        clearInterval(
-          captureTimerRef.current
-        );
-      }
-
       if (streamRef.current) {
         streamRef.current
           .getTracks()
-          .forEach((track) => {
-            track.stop();
-          });
+          .forEach((track) =>
+            track.stop()
+          );
+
+        streamRef.current = null;
       }
     };
   }, []);
 
-  // ==========================================
+  // =================================================
   // UI
-  // ==========================================
+  // =================================================
 
   return (
-    <div className="camera-page">
+    <div className="page camera-page">
 
-      {/* PAGE STYLES */}
+      {/* HEADER */}
 
-      <style>
-        {`
-          /* =====================================================
-             CAMERA PAGE ALIGNMENT
-             SAME ALIGNMENT STYLE AS HANDWRITING TO SPEECH
-             ===================================================== */
+      <button
+  type="button"
+  className="btn ghost"
+  onClick={() => setActivePage("dashboard")}
+  style={{ marginBottom: "20px" }}
+>
+  ← Back to Dashboard
+</button>
 
-          .camera-page-top {
-            padding-top: 0 !important;
-            margin-top: 0 !important;
-          }
+      <div className="page-header">
+        <div>
+          <span className="eyebrow">
+            CAMERA AI
+          </span>
 
-          .camera-back-button {
-            position: static !important;
+          <h1>
+            Camera Recognition
+          </h1>
 
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 9px;
-
-            margin-top: 0 !important;
-            margin-bottom: 0 !important;
-
-            background: #0c1525 !important;
-            border: 1px solid #26364a !important;
-            color: #f1f5f9 !important;
-          }
-
-          .camera-back-button svg {
-            color: #f1f5f9 !important;
-          }
-
-          /* =====================================================
-             HEADER ALIGNMENT
-             ===================================================== */
-
-          .camera-intro.camera-header-fixed {
-            margin-top: 32px !important;
-            padding-top: 0 !important;
-            margin-bottom: 0 !important;
-          }
-
-          .camera-page-logo {
-            width: 58px;
-            height: 58px;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            margin-top: 0;
-            margin-bottom: 13px;
-
-            color: #e2e8f0;
-
-            background: transparent;
-            border: 0;
-          }
-
-          .camera-page-logo svg {
-            width: 46px;
-            height: 46px;
-            stroke-width: 1.7;
-          }
-
-          /* =====================================================
-             CAMERA CONTENT SPACING
-             ===================================================== */
-
-          .camera-layout {
-            margin-top: 28px !important;
-          }
-
-          /* =====================================================
-             MOBILE
-             ===================================================== */
-
-          @media (max-width: 700px) {
-            .camera-intro.camera-header-fixed {
-              margin-top: 26px !important;
-            }
-
-            .camera-layout {
-              margin-top: 24px !important;
-            }
-          }
-        `}
-      </style>
-
-
-      {/* BACK TO DASHBOARD */}
-
-      <div className="camera-page-top">
-
-        <button
-          type="button"
-          className="btn ghost camera-back-button"
-          onClick={() =>
-            setActivePage("dashboard")
-          }
-        >
-          <ArrowLeft size={18} />
-
-          Back to Dashboard
-        </button>
-
-      </div>
-
-
-      {/* PAGE HEADER */}
-
-      <div className="camera-intro camera-header-fixed">
-
-        {/* LARGE CAMERA LOGO */}
-
-        <div className="camera-page-logo">
-          <Camera />
+          <p>
+            Capture a handwritten digit
+            using your camera and let
+            the AI model recognize it.
+          </p>
         </div>
 
-
-        <span className="eyebrow">
-          ADVANCED RECOGNITION
-        </span>
-
-
-        <h1>
-          Camera Recognition
-        </h1>
-
-
-        <p>
-          Show your handwriting to the camera.
-          The image will be captured automatically.
-        </p>
-
+        <Camera size={32} />
       </div>
 
-
-      {/* CAMERA LAYOUT */}
+      {/* CAMERA AREA */}
 
       <div className="camera-layout">
-
 
         {/* CAMERA CARD */}
 
@@ -574,179 +516,115 @@ export default function CameraRecognition({ setActivePage }) {
           <div className="panel-head">
 
             <div>
-
               <span className="eyebrow">
                 LIVE CAMERA
               </span>
 
               <h3>
-                Handwriting Scanner
+                Capture Handwritten Digit
               </h3>
-
             </div>
 
-
-            <span
-              className={
-                cameraOn
-                  ? "camera-status"
-                  : capturedImage
-                  ? "camera-status"
-                  : "camera-status offline"
-              }
-            >
-              {cameraOn
-                ? "Camera Active"
-                : capturedImage
-                ? "Image Captured"
-                : "Camera Off"}
-            </span>
+            {cameraOn ? (
+              <span className="camera-status">
+                <span className="status-dot green"></span>
+                Camera On
+              </span>
+            ) : (
+              <span className="camera-status">
+                <span className="status-dot"></span>
+                Camera Off
+              </span>
+            )}
 
           </div>
-
 
           {/* CAMERA PREVIEW */}
 
-          <div
-            className="camera-preview"
-            style={{
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
+          {!capturedImage && (
+            <div
+              className="camera-preview"
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                minHeight: "330px",
+                background: "#050914",
+              }}
+            >
 
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className={
-                cameraOn
-                  ? "camera-video visible"
-                  : "camera-video"
-              }
-            />
+              {/* VIDEO IS ALWAYS MOUNTED */}
 
-
-            {!cameraOn &&
-              !capturedImage && (
-                <div className="camera-placeholder">
-
-                  <Camera size={50} />
-
-                  <strong>
-                    Camera is OFF
-                  </strong>
-
-                  <span>
-                    Click Start Camera to
-                    open your webcam.
-                  </span>
-
-                </div>
-              )}
-
-
-            {cameraOn && (
-              <div className="scanner-frame">
-
-                <span className="corner top-left" />
-                <span className="corner top-right" />
-                <span className="corner bottom-left" />
-                <span className="corner bottom-right" />
-
-                <div className="scan-line" />
-
-                <div className="scanner-label">
-                  PLACE HANDWRITING HERE
-                </div>
-
-
-                {countdown > 0 && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "50%",
-                      left: "50%",
-                      transform:
-                        "translate(-50%, -50%)",
-                      zIndex: 20,
-                      width: "70px",
-                      height: "70px",
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background:
-                        "rgba(0,0,0,0.75)",
-                      border:
-                        "2px solid #ff9f43",
-                      color: "#ffffff",
-                      fontSize: "30px",
-                      fontWeight: "800",
-                    }}
-                  >
-                    {countdown}
-                  </div>
-                )}
-
-              </div>
-            )}
-
-
-            {capturedImage && (
-              <div
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                onLoadedMetadata={() => {
+                  if (
+                    videoRef.current
+                  ) {
+                    videoRef.current
+                      .play()
+                      .catch(
+                        (err) =>
+                          console.error(
+                            "Video play error:",
+                            err
+                          )
+                      );
+                  }
+                }}
                 style={{
                   position: "absolute",
                   inset: 0,
-                  zIndex: 100,
-                  background: "#050811",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  width: "100%",
+                  height: "100%",
+                  display: "block",
+                  visibility: "visible",
+                  opacity: 1,
+                  objectFit: "cover",
+                  zIndex: 2,
+                  background:
+                    "#050914",
                 }}
-              >
+              />
 
-                <img
-                  src={capturedImage}
-                  alt="Captured handwriting"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                  }}
-                />
+              {/* CAMERA OFF MESSAGE */}
 
-
+              {!cameraOn && (
                 <div
+                  className="camera-placeholder"
                   style={{
-                    position: "absolute",
-                    top: "15px",
-                    left: "15px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "7px",
-                    padding: "9px 13px",
-                    borderRadius: "9px",
-                    background:
-                      "rgba(0,0,0,0.82)",
-                    color: "#ffffff",
-                    fontSize: "13px",
-                    fontWeight: "700",
+                    position:
+                      "absolute",
+                    inset: 0,
+                    zIndex: 3,
                   }}
                 >
+                  <Camera size={48} />
 
-                  <CheckCircle2 size={17} />
-
-                  Handwriting Captured
-
+                  <span>
+                    Click Start Camera
+                    to begin.
+                  </span>
                 </div>
+              )}
 
-              </div>
-            )}
+            </div>
+          )}
 
-          </div>
+          {/* CAPTURED IMAGE */}
 
+          {capturedImage && (
+            <div className="camera-preview">
+
+              <img
+                src={capturedImage}
+                alt="Captured handwritten digit"
+              />
+
+            </div>
+          )}
 
           {/* HIDDEN CANVAS */}
 
@@ -757,31 +635,23 @@ export default function CameraRecognition({ setActivePage }) {
             }}
           />
 
-
           {/* ERROR */}
 
           {error && (
-            <div className="camera-error">
+            <div className="error-box">
 
-              <AlertCircle size={18} />
+              <AlertCircle
+                size={19}
+              />
 
-              <div>
-
-                <strong>
-                  Camera Error
-                </strong>
-
-                <span>
-                  {error}
-                </span>
-
-              </div>
+              <span>
+                {error}
+              </span>
 
             </div>
           )}
 
-
-          {/* BUTTONS */}
+          {/* CONTROLS */}
 
           <div className="camera-actions">
 
@@ -790,178 +660,257 @@ export default function CameraRecognition({ setActivePage }) {
                 <button
                   type="button"
                   className="btn primary"
-                  onClick={startCamera}
-                  disabled={loading}
+                  onClick={
+                    startCamera
+                  }
                 >
+                  <Camera
+                    size={18}
+                  />
 
-                  <Camera size={19} />
-
-                  {loading
-                    ? "Starting..."
-                    : "Start Camera"}
-
+                  Start Camera
                 </button>
               )}
 
-
             {cameraOn && (
-              <button
-                type="button"
-                className="btn danger"
-                onClick={stopCamera}
-              >
+              <>
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={
+                    captureImage
+                  }
+                >
+                  <Camera
+                    size={18}
+                  />
 
-                <CameraOff size={19} />
+                  Capture
+                </button>
 
-                Stop Camera
+                <button
+                  type="button"
+                  className="btn secondary"
+                  onClick={
+                    stopCamera
+                  }
+                >
+                  <CameraOff
+                    size={18}
+                  />
 
-              </button>
+                  Stop Camera
+                </button>
+              </>
             )}
-
 
             {capturedImage && (
-              <button
-                type="button"
-                className="btn primary"
-                onClick={retake}
-              >
+              <>
+                <button
+                  type="button"
+                  className="btn secondary"
+                  onClick={retake}
+                  disabled={loading}
+                >
+                  <RotateCcw
+                    size={18}
+                  />
 
-                <Camera size={19} />
+                  Retake
+                </button>
 
-                Retake
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={
+                    recognizeDigit
+                  }
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2
+                        size={18}
+                        className="spin"
+                      />
 
-              </button>
+                      Recognizing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles
+                        size={18}
+                      />
+
+                      Recognize Digit
+                    </>
+                  )}
+                </button>
+              </>
             )}
 
-
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={reset}
-            >
-
-              <RotateCcw size={18} />
-
-              Reset
-
-            </button>
-
-          </div>
-
-
-          {/* MESSAGE */}
-
-          <div className="camera-message">
-            {message}
           </div>
 
         </div>
 
+        {/* RESULT CARD */}
 
-        {/* RIGHT SIDE */}
+        <div className="result-card">
 
-        <div className="camera-info-card">
-
-          <div className="camera-info-heading">
-
-            <ScanLine size={23} />
+          <div className="panel-head">
 
             <div>
-
               <span className="eyebrow">
-                AUTOMATIC WORKFLOW
+                AI RESULT
               </span>
 
-              <h2>
-                Camera → Capture → AI
-              </h2>
-
+              <h3>
+                Prediction
+              </h3>
             </div>
+
+            <Sparkles size={22} />
 
           </div>
 
+          {!prediction &&
+            !loading &&
+            !error && (
+              <div className="empty-state">
 
-          <div className="camera-steps">
+                <Camera size={32} />
 
-            <div className="camera-step">
-
-              <span>
-                01
-              </span>
-
-              <div>
-
-                <strong>
-                  Start Camera
-                </strong>
-
-                <p>
-                  Open the webcam and show
-                  your handwriting.
-                </p>
+                <span>
+                  Capture a digit and
+                  click Recognize Digit.
+                </span>
 
               </div>
+            )}
 
-            </div>
+          {loading && (
+            <div className="empty-state">
 
-
-            <div className="camera-step">
-
-              <span>
-                02
-              </span>
-
-              <div>
-
-                <strong>
-                  Automatic Capture
-                </strong>
-
-                <p>
-                  After 2 seconds, the
-                  handwriting image is captured
-                  automatically.
-                </p>
-
-              </div>
-
-            </div>
-
-
-            <div className="camera-step">
+              <Loader2
+                size={32}
+                className="spin"
+              />
 
               <span>
-                03
+                AI is recognizing
+                the digit...
               </span>
 
-              <div>
+            </div>
+          )}
 
-                <strong>
-                  AI Recognition
-                </strong>
+          {prediction !== null &&
+            !loading && (
+              <div className="prediction-main">
 
-                <p>
-                  The captured image can then
-                  be sent to the AI backend.
-                </p>
+                <div className="prediction-value">
+                  {prediction}
+                </div>
+
+                <div className="confidence">
+
+                  <div className="confidence-top">
+
+                    <span>
+                      Confidence
+                    </span>
+
+                    <b>
+                      {Number(
+                        confidence || 0
+                      ).toFixed(1)}
+                      %
+                    </b>
+
+                  </div>
+
+                  <div className="bar">
+
+                    <i
+                      style={{
+                        width: `${Math.max(
+                          0,
+                          Math.min(
+                            100,
+                            Number(
+                              confidence ||
+                                0
+                            )
+                          )
+                        )}%`,
+                      }}
+                    />
+
+                  </div>
+
+                </div>
+
+                <div className="success-box">
+
+                  <CheckCircle2
+                    size={19}
+                  />
+
+                  <span>
+                    Digit recognized
+                    successfully.
+                  </span>
+
+                </div>
 
               </div>
+            )}
 
-            </div>
+        </div>
 
-          </div>
+      </div>
 
+      {/* INFO */}
 
-          <div className="camera-note">
+      <div className="camera-info">
+
+        <div>
+
+          <Camera size={20} />
+
+          <div>
 
             <strong>
-              Current Status
+              How it works
             </strong>
 
             <p>
-              {capturedImage
-                ? "Handwriting captured successfully. Ready for AI recognition."
-                : "Show handwriting inside the scanner frame. Capture happens automatically."}
+              Start the camera → write
+              a digit clearly → capture
+              the image → click
+              Recognize Digit.
+            </p>
+
+          </div>
+
+        </div>
+
+        <div>
+
+          <Sparkles size={20} />
+
+          <div>
+
+            <strong>
+              AI Recognition
+            </strong>
+
+            <p>
+              The captured image is sent
+              to the Python Flask backend,
+              where the trained digit model
+              predicts the handwritten digit
+              and confidence.
             </p>
 
           </div>
@@ -973,4 +922,3 @@ export default function CameraRecognition({ setActivePage }) {
     </div>
   );
 }
-

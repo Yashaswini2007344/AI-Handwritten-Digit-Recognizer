@@ -1,5 +1,38 @@
 venv/
-__pycache__/
+pycache/
 *.pyc
 .env
 uploads/
+
+Frontend dependencies
+
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+Python cache and environments
+
+.venv/
+**/pycache/
+
+Local database and debug images
+
+backend/digit_history.db
+backend/debug_character.png
+backend/debug_digit.png
+backend/debug_processed.png
+digit_history.db
+
+# Local database
+digit_history.db
+
+# Python environments
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Frontend dependencies
+node_modules/
+frontend/node_modules/
+frontend/dist/

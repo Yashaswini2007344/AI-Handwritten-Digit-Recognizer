@@ -1,4 +1,14 @@
-const API_URL = "http://127.0.0.1:5000/api/predict";
+
+const DIGIT_API_URL =
+  "http://127.0.0.1:5000/api/predict";
+
+const MULTI_DIGIT_API_URL =
+  "http://127.0.0.1:5000/api/predict-multi-digit";
+
+
+const AUTOMATIC_NUMBER_EXTRACTION_API_URL =
+  "http://127.0.0.1:5000/api/extract-number-image";
+
 
 export async function predictImage(file, mode = "digit") {
   if (!file) {
@@ -6,9 +16,15 @@ export async function predictImage(file, mode = "digit") {
   }
 
   const formData = new FormData();
-
   formData.append("image", file);
-  formData.append("mode", mode);
+
+  // Select the correct backend API
+  const API_URL =
+    mode === "automatic_number_extraction"
+      ? AUTOMATIC_NUMBER_EXTRACTION_API_URL
+      : mode === "multi_digit"
+      ? MULTI_DIGIT_API_URL
+      : DIGIT_API_URL;
 
   try {
     const response = await fetch(API_URL, {
@@ -16,55 +32,63 @@ export async function predictImage(file, mode = "digit") {
       body: formData,
     });
 
-    if (!response.ok) {
-      let message = `Backend error (${response.status})`;
+    const data = await response.json().catch(() => ({}));
 
-      try {
-        const data = await response.json();
-
-        if (data?.message) {
-          message = data.message;
-        }
-
-        if (data?.error) {
-          message = data.error;
-        }
-      } catch {}
-
-      throw new Error(message);
+    if (!response.ok || data?.success === false) {
+      throw new Error(
+        data?.message ||
+        data?.error ||
+        `Backend error (${response.status})`
+      );
     }
 
-    const data = await response.json();
-
+    // Read prediction according to recognition mode
     const prediction =
-      data?.digit ??
-      data?.prediction ??
-      data?.label ??
-      data?.result;
+      mode === "automatic_number_extraction"
+        ? (
+            data?.number ??
+            data?.prediction ??
+            data?.result
+          )
+        : mode === "multi_digit"
+        ? (
+            data?.number ??
+            data?.prediction ??
+            data?.label ??
+            data?.result
+          )
+        : mode === "character"
+        ? (
+            data?.character ??
+            data?.prediction ??
+            data?.label ??
+            data?.result
+          )
+        : (
+            data?.digit ??
+            data?.prediction ??
+            data?.label ??
+            data?.result
+          );
 
-    if (
-      prediction === undefined ||
-      prediction === null
-    ) {
+    if (prediction === undefined || prediction === null) {
       throw new Error(
         "Backend response does not contain a valid prediction."
       );
     }
 
     const confidence = Number(
-      data?.confidence ??
-      data?.score ??
-      0
+      data?.confidence ?? data?.score ?? 0
     );
 
     return {
-      prediction,
-      confidence: Number.isFinite(confidence)
-        ? confidence
-        : 0,
+      prediction: String(prediction),
+      number: String(prediction),
+      confidence: Number.isFinite(confidence) ? confidence : 0,
       mode,
       raw: data,
     };
+
   } catch (error) {
     if (
       error instanceof TypeError ||

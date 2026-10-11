@@ -1,857 +1,749 @@
-import { 
-  Hash, 
-  Type, 
-  AlignLeft, 
-  FileText, 
-  Activity, 
-  ArrowRight, 
-  CheckCircle2, 
-  Server, 
-  Brain, 
-  Building2, 
-  HeartPulse, 
-  GraduationCap, 
-  ShoppingBag, 
-  Truck, 
-  Landmark, 
-  Sparkles, 
-  Camera, 
-  Languages, 
-  Volume2, 
-  FileSearch, 
-  Cloud, 
-  Bot, 
-  ScanText, 
-  ShieldCheck, 
-  WandSparkles, 
-} from "lucide-react"; 
- 
-const recognitionCards = [ 
-  { 
-    id: "digit", 
-    title: "Digit Recognition", 
-    description: "Recognize handwritten numbers from 0 to 9.", 
-    icon: Hash, 
-    color: "orange", 
-    status: "Core Feature", 
-  }, 
-  { 
-    id: "character", 
-    title: "Character Recognition", 
-    description: "Recognize individual handwritten A-Z characters.", 
-    icon: Type, 
-    color: "blue", 
-    status: "AI Feature", 
-  }, 
-  { 
-    id: "word", 
-    title: "Word Recognition", 
-    description: "Convert handwritten words into digital text.", 
-    icon: AlignLeft, 
-    color: "purple", 
-    status: "Advanced", 
-  }, 
-  { 
-    id: "text", 
-    title: "Text Recognition", 
-    description: "Understand complete handwritten text and notes.", 
-    icon: FileText, 
-    color: "green", 
-    status: "Advanced", 
-  }, 
-]; 
- 
-const applications = [ 
-  { 
-    icon: Building2, 
-    title: "Banking & Financial Forms", 
-    use: "Read handwritten account numbers, forms and financial entries.", 
-    example: "A bank can scan a handwritten account-opening form and extract the customer's written information.", 
-  }, 
-  { 
-    icon: HeartPulse, 
-    title: "Hospital & Medical Records", 
-    use: "Digitize handwritten patient notes and medical information.", 
-    example: "A hospital can convert a doctor's handwritten patient notes into searchable digital records.", 
-  }, 
-  { 
-    icon: GraduationCap, 
-    title: "Education & Answer Sheets", 
-    use: "Convert handwritten answers and academic records into digital text.", 
-    example: "A teacher can scan handwritten answer sheets and organize the written information digitally.", 
-  }, 
-  { 
-    icon: ShoppingBag, 
-    title: "Shops & Business Records", 
-    use: "Digitize handwritten bills, stock entries and customer records.", 
-    example: "A shopkeeper can scan a handwritten stock register and convert product entries into digital records.", 
-  }, 
-  { 
-    icon: Truck, 
-    title: "Courier & Delivery", 
-    use: "Recognize handwritten delivery details and addresses.", 
-    example: "A courier company can scan a handwritten parcel address and convert it into digital delivery information.", 
-  }, 
-  { 
-    icon: Landmark, 
-    title: "Government Forms", 
-    use: "Digitize handwritten government documents and forms.", 
-    example: "A government office can scan handwritten application forms and store the information in a digital database.", 
-  }, 
-]; 
- 
-const advancedFeatures = [ 
-  { 
-    icon: Camera, 
-    title: "Camera Recognition", 
-    text: "Recognize handwriting directly from a camera image.", 
-    action: "camera", 
-  }, 
-  { 
-    icon: Languages, 
-    title: "Marathi + Hindi + English", 
-    text: "Recognize handwritten content in Marathi, Hindi and English.", 
-    action: "multilingual", 
-  }, 
-  { 
-    icon: Volume2, 
-    title: "Handwriting to Speech", 
-    text: "Convert recognized handwriting into spoken output.", 
-    action: "speech", 
-  }, 
-  { 
-    icon: FileSearch, 
-    title: "Notebook Digitization", 
-    text: "Convert handwritten notebooks and notes into searchable digital content.", 
-    action: "notebook", 
-  }, 
-  { 
-    icon: Cloud, 
-    title: "Cloud Processing", 
-    text: "Process larger handwriting documents using cloud-based AI.", 
-    action: "cloud", 
-  }, 
-  { 
-    icon: Bot, 
-    title: "AI Document Assistant", 
-    text: "Understand recognized information and provide useful assistance.", 
-    action: "assistant", 
-  }, 
-  { 
-    icon: FileSearch, 
-    title: "Search Handwritten Documents", 
-    text: "Search for information inside digitized handwritten documents.", 
-    action: "search-documents", 
-  }, 
-  { 
-    icon: ShieldCheck, 
-    title: "Privacy-Preserving AI", 
-    text: "Process sensitive handwriting with privacy-focused AI.", 
-    action: "privacy-ai", 
-  }, 
-]; 
- 
-const futureScope = [ 
-  { 
-    icon: WandSparkles, 
-    title: "Real-time Smart Writing Assistant", 
-    text: "AI can recognize handwriting while the user is writing.", 
-  }, 
-  { 
-    icon: Brain, 
-    title: "Personalized Handwriting AI", 
-    text: "The system can learn different handwriting styles.", 
-  }, 
-  { 
-    icon: ScanText, 
-    title: "Automatic Handwritten Form Filling", 
-    text: "Recognized information can be used to fill digital forms.", 
-  }, 
-  { 
-    icon: FileText, 
-    title: "Historical Document AI", 
-    text: "Old handwritten documents can be digitized and preserved.", 
-  }, 
-  { 
-    icon: Sparkles, 
-    title: "Multimodal Document Understanding", 
-    text: "AI can understand handwriting, printed text, tables and diagrams together.", 
-  }, 
-  { 
-    icon: ShieldCheck, 
-    title: "Privacy-Preserving AI", 
-    text: "Future models can process sensitive handwriting locally.", 
-  }, 
-]; 
- 
-function FeatureCard({ item, onOpen }) { 
-  const Icon = item.icon; 
- 
-  return ( 
-    <button 
-      type="button" 
-      className={`recognition-card ${item.color}`} 
-      onClick={() => onOpen(item.id)} 
-    > 
-      <div className="recognition-card-top"> 
-        <div className="feature-icon"> 
-          <Icon size={21} /> 
-        </div> 
- 
-        <span className="feature-status"> 
-          {item.status} 
-        </span> 
-      </div> 
- 
-      <h3>{item.title}</h3> 
- 
-      <p>{item.description}</p> 
- 
-      <span className="card-action"> 
-        Open Recognition 
-        <ArrowRight size={15} /> 
-      </span> 
-    </button> 
-  ); 
-} 
- 
-function InfoCard({ item, onOpen }) { 
-  const Icon = item.icon; 
- 
-  const content = ( 
-    <> 
-      <div className="info-feature-icon"> 
-        <Icon size={19} /> 
-      </div> 
- 
-      <div> 
-        <h3>{item.title}</h3> 
- 
-        {item.use ? ( 
-          <> 
-            <p> 
-              <strong>Use:</strong> {item.use} 
-            </p> 
-            <p> 
-              <strong>Example:</strong> {item.example} 
-            </p> 
-          </> 
-        ) : ( 
-          <p>{item.text}</p> 
-        )} 
-      </div> 
-    </> 
-  ); 
- 
-  if (onOpen) { 
-    return ( 
-      <button 
-        type="button" 
-        className="info-feature-card" 
-        onClick={() => onOpen(item.action)} 
-      > 
-        {content} 
-      </button> 
-    ); 
-  } 
- 
-  return ( 
-    <div className="info-feature-card"> 
-      {content} 
-    </div> 
-  ); 
-} 
- 
-export default function Home({ 
-  setActivePage, 
-  file, 
-  result, 
-}) { 
-  const totalPredictions = Number( 
-    localStorage.getItem("ai-handwriting-history") 
-      ? JSON.parse( 
-          localStorage.getItem( 
-            "ai-handwriting-history" 
-          ) 
-        ).length 
-      : 0 
-  ); 
- 
-  const openRecognition = (page) => { 
-    setActivePage(page); 
-  }; 
- 
-  return ( 
-    <div className="home-page"> 
 
-      {/* ONLY COLOR FIX FOR ADVANCED FEATURE NAMES */}
-      <style>
-        {`
-          .info-feature-card h3 {
-            color: #f8fafc !important;
-          }
-        `}
-      </style>
+import {
+  Hash,
+  Activity,
+  ArrowRight,
+  CheckCircle2,
+  Brain,
+  Building2,
+  HeartPulse,
+  GraduationCap,
+  ShoppingBag,
+  Truck,
+  Landmark,
+  Sparkles,
+  FileSearch,
+  Cloud,
+  ScanText,
+} from "lucide-react";
 
-      {/* HERO */} 
-      <section className="hero-section"> 
-        <div className="hero-content"> 
-          <span className="eyebrow"> 
-            AI HANDWRITING RECOGNITION 
-          </span> 
- 
-          <h1> 
-            Turn Handwriting 
-            <br /> 
-            Into <span>Intelligent Data.</span> 
-          </h1> 
- 
-          <p> 
-            An AI-powered platform designed to recognize 
-            handwritten digits, characters, words and 
-            complete text — and transform them into 
-            useful digital information. 
-          </p> 
- 
-          <div className="hero-actions"> 
-            <button 
-              type="button" 
-              className="btn primary" 
-              onClick={() => setActivePage("digit")} 
-            > 
-              <Brain size={17} /> 
-              Start Recognition 
-            </button> 
- 
-            <button 
-              type="button" 
-              className="btn" 
-              onClick={() => setActivePage("history")} 
-            > 
-              <Activity size={17} /> 
-              View History 
-            </button> 
-          </div> 
- 
-          <div className="hero-points"> 
-            <span> 
-              <CheckCircle2 size={15} /> 
-              React Frontend 
-            </span> 
- 
-            <span> 
-              <CheckCircle2 size={15} /> 
-              Python + Flask Backend 
-            </span> 
- 
-            <span> 
-              <CheckCircle2 size={15} /> 
-              AI / ML Recognition 
-            </span> 
-          </div> 
-        </div> 
- 
-        <div className="hero-visual"> 
-          <div className="ai-orb"> 
-            <Brain size={62} /> 
-          </div> 
- 
-          <div className="floating-card floating-one"> 
-            <Hash size={17} /> 
-            <div> 
-              <b>Digit</b> 
-              <small>0 — 9</small> 
-            </div> 
-          </div> 
- 
-          <div className="floating-card floating-two"> 
-            <Type size={17} /> 
-            <div> 
-              <b>Character</b> 
-              <small>A — Z</small> 
-            </div> 
-          </div> 
- 
-          <div className="floating-card floating-three"> 
-            <FileText size={17} /> 
-            <div> 
-              <b>Text</b> 
-              <small>AI Reading</small> 
-            </div> 
-          </div> 
-        </div> 
-      </section> 
- 
-      {/* RECOGNITION */} 
-      <section className="dashboard-section"> 
-        <div className="section-title-row"> 
-          <div> 
-            <span className="eyebrow"> 
-              RECOGNITION MODES 
-            </span> 
- 
-            <h2> 
-              What can the AI recognize? 
-            </h2> 
- 
-            <p> 
-              Choose a recognition mode to start working 
-              with handwritten information. 
-            </p> 
-          </div> 
-        </div> 
- 
-        <div className="recognition-cards"> 
-          {recognitionCards.map((item) => ( 
-            <FeatureCard 
-              key={item.id} 
-              item={item} 
-              onOpen={openRecognition} 
-            /> 
-          ))} 
-        </div> 
-      </section> 
- 
-      {/* QUICK STATS */} 
-      <section className="dashboard-section"> 
-        <div className="mini-dashboard-grid"> 
-          <div className="dashboard-card statistics-card"> 
-            <div className="dashboard-card-heading"> 
-              <div> 
-                <span className="eyebrow"> 
-                  STATISTICS 
-                </span> 
-                <h3>Statistics Overview</h3> 
-              </div> 
- 
-              <Activity size={20} /> 
-            </div> 
- 
-            <div className="stats-number"> 
-              {totalPredictions} 
-            </div> 
- 
-            <p>Total predictions recorded</p> 
- 
-            <div className="stats-row"> 
-              <div> 
-                <b>0–9</b> 
-                <span>Digits</span> 
-              </div> 
- 
-              <div> 
-                <b>A–Z</b> 
-                <span>Characters</span> 
-              </div> 
- 
-              <div> 
-                <b>AI</b> 
-                <span>Engine</span> 
-              </div> 
-            </div> 
-          </div> 
- 
-          <div className="dashboard-card trend-card"> 
-            <div className="dashboard-card-heading"> 
-              <div> 
-                <span className="eyebrow"> 
-                  THIS WEEK 
-                </span> 
-                <h3>Prediction Trend</h3> 
-              </div> 
- 
-              <span className="trend-label"> 
-                Mon — Sun 
-              </span> 
-            </div> 
- 
-            <div className="trend-chart"> 
-              {[28, 48, 35, 65, 52, 76, 58].map( 
-                (height, index) => ( 
-                  <div 
-                    className="trend-column" 
-                    key={index} 
-                  > 
-                    <div className="trend-bar-area"> 
-                      <div 
-                        className="trend-bar" 
-                        style={{ 
-                          height: `${height}%`, 
-                        }} 
-                      /> 
-                    </div> 
- 
-                    <span> 
-                      { 
-                        [ 
-                          "Mon", 
-                          "Tue", 
-                          "Wed", 
-                          "Thu", 
-                          "Fri", 
-                          "Sat", 
-                          "Sun", 
-                        ][index] 
-                      } 
-                    </span> 
-                  </div> 
-                ) 
-              )} 
-            </div> 
-          </div> 
- 
-          <div className="dashboard-card activity-card"> 
-            <div className="dashboard-card-heading"> 
-              <div> 
-                <span className="eyebrow"> 
-                  ACTIVITY 
-                </span> 
-                <h3>Recent Activity</h3> 
-              </div> 
- 
-              <button 
-                type="button" 
-                className="text-button" 
-                onClick={() => 
-                  setActivePage("history") 
-                } 
-              > 
-                View all 
-              </button> 
-            </div> 
- 
-            {result ? ( 
-              <div className="activity-item"> 
-                <div className="activity-icon"> 
-                  <Hash size={17} /> 
-                </div> 
- 
-                <div> 
-                  <b> 
-                    Prediction: {result.prediction} 
-                  </b> 
- 
-                  <span> 
-                    Confidence:{" "} 
-                    {Number( 
-                      result.confidence || 0 
-                    ).toFixed(1)} 
-                    % 
-                  </span> 
-                </div> 
-              </div> 
-            ) : ( 
-              <> 
-                <div className="activity-item"> 
-                  <div className="activity-icon"> 
-                    <Brain size={17} /> 
-                  </div> 
- 
-                  <div> 
-                    <b>AI Studio Ready</b> 
-                    <span> 
-                      Waiting for first prediction 
-                    </span> 
-                  </div> 
-                </div> 
- 
-                <div className="activity-item"> 
-                  <div className="activity-icon blue"> 
-                    <FileText size={17} /> 
-                  </div> 
- 
-                  <div> 
-                    <b>Frontend Connected</b> 
-                    <span> 
-                      Dashboard is ready 
-                    </span> 
-                  </div> 
-                </div> 
-              </> 
-            )} 
-          </div> 
-        </div> 
-      </section> 
- 
-      {/* PROJECT INFORMATION */} 
-      <section className="dashboard-section project-status-section"> 
-        <div className="section-title-row"> 
-          <div> 
-            <span className="eyebrow"> 
-              PROJECT INFORMATION 
-            </span> 
- 
-            <h2> 
-              What works and what does not? 
-            </h2> 
- 
-            <p> 
-              The frontend and AI backend are separate 
-              parts of this project. 
-            </p> 
-          </div> 
-        </div> 
- 
-        <div className="project-status-grid"> 
-          <div className="project-status-card working"> 
-            <div className="project-status-icon"> 
-              <CheckCircle2 size={21} /> 
-            </div> 
- 
-            <h3>Working Now — Frontend</h3> 
- 
-            <ul> 
-              <li>Dashboard and navigation</li> 
-              <li>Draw handwriting canvas</li> 
-              <li>Image upload and clear</li> 
-              <li>Prediction result interface</li> 
-              <li>Confidence score display</li> 
-              <li>Recognition history</li> 
-              <li>History search and clear</li> 
-              <li>Profile and analytics pages</li> 
-              <li>Real-life applications information</li> 
-              <li>Future scope information</li> 
-            </ul> 
-          </div> 
- 
-          <div className="project-status-card backend"> 
-            <div className="project-status-icon"> 
-              <Server size={21} /> 
-            </div> 
- 
-            <h3> 
-              Needs Python / Flask AI Backend 
-            </h3> 
- 
-            <ul> 
-              <li>Actual digit prediction</li> 
-              <li>A-Z character recognition</li> 
-              <li>Word recognition</li> 
-              <li>Complete handwritten text recognition</li> 
-              <li>Camera-based recognition</li> 
-              <li>Marathi, Hindi and English recognition</li> 
-              <li>Speech conversion</li> 
-              <li>Document understanding</li> 
-              <li>Cloud processing</li> 
-              <li>AI document assistant</li> 
-            </ul> 
-          </div> 
- 
-          <div className="project-status-card limitation"> 
-            <div className="project-status-icon"> 
-              <Activity size={21} /> 
-            </div> 
- 
-            <h3>Important Limitation</h3> 
- 
-            <p> 
-              The React frontend cannot recognize 
-              handwriting by itself. It prepares the 
-              drawing or uploaded image and sends it to 
-              the Python / Flask AI backend. 
-            </p> 
- 
-            <p> 
-              If the backend is not running, the project 
-              should show a clear backend connection error 
-              instead of displaying a fake AI prediction. 
-            </p> 
-          </div> 
-        </div> 
-      </section> 
- 
-      {/* ADVANCED CAPABILITIES */} 
-      <section className="dashboard-section"> 
-        <div className="section-title-row"> 
-          <div> 
-            <span className="eyebrow"> 
-              ADVANCED CAPABILITIES 
-            </span> 
- 
-            <h2> 
-              Beyond basic digit recognition 
-            </h2> 
- 
-            <p> 
-              These features extend the project from a 
-              digit recognizer into an intelligent 
-              handwriting platform. 
-            </p> 
-          </div> 
-        </div> 
- 
-        <div className="info-feature-grid"> 
-          {advancedFeatures.map((item) => ( 
-            <InfoCard 
-              key={item.title} 
-              item={item} 
-              onOpen={ 
-                item.action 
-                  ? (page) => setActivePage(page) 
-                  : undefined 
-              } 
-            /> 
-          ))} 
-        </div> 
-      </section> 
- 
-      {/* REAL LIFE APPLICATIONS */} 
-      <section className="dashboard-section"> 
-        <div className="section-title-row"> 
-          <div> 
-            <span className="eyebrow"> 
-              REAL-LIFE APPLICATIONS 
-            </span> 
- 
-            <h2> 
-              Where can this technology be used? 
-            </h2> 
- 
-            <p> 
-              Handwriting recognition can help convert 
-              physical handwritten information into 
-              searchable digital data. 
-            </p> 
-          </div> 
-        </div> 
- 
-        <div className="info-feature-grid applications-grid"> 
-          {applications.map((item) => ( 
-            <InfoCard 
-              key={item.title} 
-              item={item} 
-            /> 
-          ))} 
-        </div> 
-      </section> 
- 
-      {/* FUTURE SCOPE */} 
-      <section className="dashboard-section future-section"> 
-        <div className="future-header"> 
-          <div> 
-            <span className="eyebrow"> 
-              FUTURE SCOPE 
-            </span> 
- 
-            <h2> 
-              From handwriting recognition 
-              to intelligent understanding 
-            </h2> 
- 
-            <p> 
-              The long-term vision is not only to read 
-              handwriting, but to understand the information 
-              and act on it. 
-            </p> 
-          </div> 
- 
-          <div className="future-badge"> 
-            <Sparkles size={17} /> 
-            AI Vision 
-          </div> 
-        </div> 
- 
-        <div className="future-grid"> 
-          {futureScope.map((item) => ( 
-            <InfoCard 
-              key={item.title} 
-              item={item} 
-            /> 
-          ))} 
-        </div> 
- 
-        <div className="future-flow"> 
-          <span>Digits</span> 
-          <ArrowRight size={17} /> 
-          <span>Characters</span> 
-          <ArrowRight size={17} /> 
-          <span>Words</span> 
-          <ArrowRight size={17} /> 
-          <span>Text</span> 
-          <ArrowRight size={17} /> 
-          <span>Documents</span> 
-          <ArrowRight size={17} /> 
-          <span>Intelligent AI</span> 
-        </div> 
- 
-        <div className="future-statement"> 
-          <Brain size={25} /> 
- 
-          <div> 
-            <b> 
-              AI doesn't just read handwriting. 
-            </b> 
- 
-            <span> 
-              It can understand handwriting and act on 
-              the information. 
-            </span> 
-          </div> 
-        </div> 
-      </section> 
- 
-      {/* ROADMAP */} 
-      <section className="dashboard-section roadmap-section"> 
-        <div className="section-title-row"> 
-          <div> 
-            <span className="eyebrow"> 
-              PROJECT ROADMAP 
-            </span> 
- 
-            <h2> 
-              Development journey 
-            </h2> 
-          </div> 
-        </div> 
- 
-        <div className="roadmap"> 
-          <div className="roadmap-step completed"> 
-            <span>01</span> 
-            <div> 
-              <b>Frontend Foundation</b> 
-              <small> 
-                Dashboard, canvas, upload and navigation 
-              </small> 
-            </div> 
-          </div> 
- 
-          <div className="roadmap-line" /> 
- 
-          <div className="roadmap-step active"> 
-            <span>02</span> 
-            <div> 
-              <b>AI Backend Integration</b> 
-              <small> 
-                Flask API and trained recognition model 
-              </small> 
-            </div> 
-          </div> 
- 
-          <div className="roadmap-line" /> 
- 
-          <div className="roadmap-step"> 
-            <span>03</span> 
-            <div> 
-              <b>Multimodal Recognition</b> 
-              <small> 
-                Characters, words, text and documents 
-              </small> 
-            </div> 
-          </div> 
- 
-          <div className="roadmap-line" /> 
- 
-          <div className="roadmap-step"> 
-            <span>04</span> 
-            <div> 
-              <b>Intelligent Document AI</b> 
-              <small> 
-                Understanding, extraction and automation 
-              </small> 
-            </div> 
-          </div> 
-        </div> 
-      </section> 
-    </div> 
-  ); 
+/* =========================================================
+   RECOGNITION MODES
+========================================================= */
+
+const recognitionCards = [
+  {
+    id: "digit",
+    title: "Digit Recognition",
+    description:
+      "Recognize handwritten digits from 0 to 9 using the AI digit model.",
+    icon: Hash,
+    color: "orange",
+    status: "WORKING",
+  },
+  {
+    id: "multi-digit",
+    title: "Multi-Digit Recognition",
+    description:
+      "Recognize multiple handwritten digits from a single input.",
+    icon: Hash,
+    color: "purple",
+    status: "WORKING",
+  },
+  {
+    id: "number-extraction",
+    title: "Automatic Number Extraction",
+    description:
+      "Detect and extract numerical information from handwritten input.",
+    icon: ScanText,
+    color: "green",
+    status: "WORKING",
+  },
+];
+
+/* =========================================================
+   REAL-LIFE APPLICATIONS
+========================================================= */
+
+const applications = [
+  {
+    icon: Building2,
+    title: "Banking & Financial Forms",
+    use: "Handwritten numerical information can be digitized.",
+    example:
+      "Account numbers and numerical entries can be processed digitally.",
+  },
+  {
+    icon: HeartPulse,
+    title: "Hospital & Medical Records",
+    use: "Handwritten numerical records can be stored digitally.",
+    example:
+      "Patient numbers and numerical records can be organized digitally.",
+  },
+  {
+    icon: GraduationCap,
+    title: "Education",
+    use: "Handwritten marks and numerical information can be processed.",
+    example:
+      "Student marks written by hand can be converted into digital information.",
+  },
+  {
+    icon: ShoppingBag,
+    title: "Shops & Business Records",
+    use: "Handwritten quantities and product numbers can be digitized.",
+    example:
+      "Stock quantities and numerical entries can be processed.",
+  },
+  {
+    icon: Truck,
+    title: "Courier & Delivery",
+    use: "Handwritten numerical delivery information can be processed.",
+    example:
+      "Parcel numbers and numerical entries can be digitized.",
+  },
+  {
+    icon: Landmark,
+    title: "Government Forms",
+    use: "Handwritten numerical information from forms can be digitized.",
+    example:
+      "Application numbers and numerical fields can be processed digitally.",
+  },
+];
+
+/* =========================================================
+   RECOGNITION CARD
+========================================================= */
+
+function FeatureCard({ item, onOpen }) {
+  const Icon = item.icon;
+
+  return (
+    <button
+      type="button"
+      className={`recognition-card ${item.color}`}
+      onClick={() => onOpen(item.id)}
+    >
+      <div className="recognition-card-top">
+        <div className="feature-icon">
+          <Icon size={21} />
+        </div>
+
+        <span className="feature-status">{item.status}</span>
+      </div>
+
+      <h3>{item.title}</h3>
+
+      <p>{item.description}</p>
+
+      <span className="card-action">
+        Open Feature
+        <ArrowRight size={15} />
+      </span>
+    </button>
+  );
+}
+
+/* =========================================================
+   INFORMATION CARD
+========================================================= */
+
+function InfoCard({ item }) {
+  const Icon = item.icon;
+
+  return (
+    <div className="info-feature-card">
+      <div className="info-feature-icon">
+        <Icon size={19} />
+      </div>
+
+      <div>
+        <h3>{item.title}</h3>
+
+        {item.use ? (
+          <>
+            <p>
+              <strong>Use:</strong> {item.use}
+            </p>
+
+            <p>
+              <strong>Example:</strong> {item.example}
+            </p>
+          </>
+        ) : (
+          <p>{item.text}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   HOME COMPONENT
+========================================================= */
+
+export default function Home({ setActivePage, result }) {
+  /* =======================================================
+     PREDICTION HISTORY COUNT
+  ======================================================= */
+
+  let totalPredictions = 0;
+
+  try {
+    const saved = localStorage.getItem("ai-handwriting-history");
+
+    if (saved) {
+      const parsed = JSON.parse(saved);
+
+      if (Array.isArray(parsed)) {
+        totalPredictions = parsed.length;
+      }
+    }
+  } catch (error) {
+    console.error("Unable to read prediction history:", error);
+  }
+
+  /* =======================================================
+     OPEN RECOGNITION
+  ======================================================= */
+
+  const openRecognition = (page) => {
+    const pageMap = {
+      digit: "digit",
+      "multi-digit": "multi_digit",
+      "number-extraction": "automatic_number_extraction",
+    };
+
+    setActivePage(pageMap[page] || "dashboard");
+  };
+
+  /* =======================================================
+     HOME UI
+  ======================================================= */
+
+  return (
+    <div className="home-page">
+
+      {/* =================================================
+          HERO
+      ================================================= */}
+
+      <section className="hero-section">
+        <div className="hero-content">
+          <span className="eyebrow">
+            AI HANDWRITING RECOGNITION
+          </span>
+
+          <h1>
+            Turn Handwriting
+            <br />
+            Into <span>Intelligent Data.</span>
+          </h1>
+
+          <p>
+            An AI-powered platform designed to recognize handwritten
+            digits and transform numerical handwriting into useful
+            digital information.
+          </p>
+
+          <div className="hero-actions">
+            <button
+              type="button"
+              className="btn primary"
+              onClick={() => setActivePage("digit")}
+            >
+              <Brain size={17} />
+              Start Recognition
+            </button>
+
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setActivePage("history")}
+            >
+              <Activity size={17} />
+              View History
+            </button>
+          </div>
+
+          <div className="hero-points">
+            <span>
+              <CheckCircle2 size={15} />
+              React Frontend
+            </span>
+
+            <span>
+              <CheckCircle2 size={15} />
+              Python + Flask Backend
+            </span>
+
+            <span>
+              <CheckCircle2 size={15} />
+              Digit AI Model
+            </span>
+          </div>
+        </div>
+
+        {/* HERO VISUAL */}
+
+        <div className="hero-visual">
+          <div className="ai-orb">
+            <Brain size={62} />
+          </div>
+
+          <div className="floating-card floating-one">
+            <Hash size={17} />
+            <div>
+              <b>Digit</b>
+              <small>0 — 9</small>
+            </div>
+          </div>
+
+          <div className="floating-card floating-three">
+            <CheckCircle2 size={17} />
+            <div>
+              <b>AI</b>
+              <small>Prediction</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =================================================
+          RECOGNITION MODES
+      ================================================= */}
+
+      <section className="dashboard-section">
+        <div className="section-title-row">
+          <div>
+            <span className="eyebrow">RECOGNITION MODES</span>
+
+            <h2>What can the AI recognize?</h2>
+
+            <p>
+              Choose a recognition feature to continue.
+            </p>
+          </div>
+        </div>
+
+        <div className="recognition-cards">
+          {recognitionCards.map((item) => (
+            <FeatureCard
+              key={item.id}
+              item={item}
+              onOpen={openRecognition}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* =================================================
+          QUICK STATISTICS
+      ================================================= */}
+
+      <section className="dashboard-section">
+        <div className="mini-dashboard-grid">
+
+          {/* STATISTICS */}
+
+          <div className="dashboard-card statistics-card">
+            <div className="dashboard-card-heading">
+              <div>
+                <span className="eyebrow">STATISTICS</span>
+                <h3>Statistics Overview</h3>
+              </div>
+
+              <Activity size={20} />
+            </div>
+
+            <div className="stats-number">
+              {totalPredictions}
+            </div>
+
+            <p>Total digit predictions recorded</p>
+
+            <div className="stats-row">
+              <div>
+                <b>0–9</b>
+                <span>Digits</span>
+              </div>
+
+              <div>
+                <b>AI</b>
+                <span>Engine</span>
+              </div>
+            </div>
+          </div>
+
+          {/* PREDICTION TREND */}
+
+          <div className="dashboard-card trend-card">
+            <div className="dashboard-card-heading">
+              <div>
+                <span className="eyebrow">SAMPLE VISUALIZATION</span>
+                <h3>Prediction Trend</h3>
+              </div>
+
+              <span className="trend-label">Mon — Sun</span>
+            </div>
+
+            <div className="trend-chart">
+              {[28, 48, 35, 65, 52, 76, 58].map(
+                (height, index) => (
+                  <div className="trend-column" key={index}>
+                    <div className="trend-bar-area">
+                      <div
+                        className="trend-bar"
+                        style={{ height: `${height}%` }}
+                      />
+                    </div>
+
+                    <span>
+                      {[
+                        "Mon",
+                        "Tue",
+                        "Wed",
+                        "Thu",
+                        "Fri",
+                        "Sat",
+                        "Sun",
+                      ][index]}
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+
+            <p>
+              Illustrative chart; actual daily history is not connected.
+            </p>
+          </div>
+
+          {/* RECENT ACTIVITY */}
+
+          <div className="dashboard-card activity-card">
+            <div className="dashboard-card-heading">
+              <div>
+                <span className="eyebrow">ACTIVITY</span>
+                <h3>Recent Activity</h3>
+              </div>
+
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => setActivePage("history")}
+              >
+                View all
+              </button>
+            </div>
+
+            {result ? (
+              <div className="activity-item">
+                <div className="activity-icon">
+                  <Hash size={17} />
+                </div>
+
+                <div>
+                  <b>Prediction: {result.prediction}</b>
+
+                  <span>
+                    Confidence:{" "}
+                    {Number(result.confidence || 0).toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="activity-item">
+                <div className="activity-icon">
+                  <Brain size={17} />
+                </div>
+
+                <div>
+                  <b>AI Studio Ready</b>
+                  <span>Waiting for prediction</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* PROJECT INFORMATION */}
+
+<section className="dashboard-section">
+  <div className="section-title-row">
+    <div>
+      <span className="section-eyebrow">PROJECT INFORMATION</span>
+      <h2>What works in the project?</h2>
+      <p>
+        An overview of the current handwritten digit recognition
+        capabilities.
+      </p>
+    </div>
+  </div>
+
+  <div className="project-status-grid">
+    {/* WORKING NOW */}
+
+    <div className="project-status-card">
+      <div className="project-status-header">
+        <h3>Working Now</h3>
+        <span className="status-label">
+          <span className="status-dot"></span>
+          Available
+        </span>
+      </div>
+
+      <ul className="digit-feature-list">
+        <li>Handwritten digit drawing (0–9)</li>
+        <li>Upload handwritten digit image</li>
+        <li>AI-based digit prediction</li>
+        <li>Predicted digit display</li>
+        <li>Prediction confidence score</li>
+        <li>Clear and redraw digit</li>
+        <li>Prediction history</li>
+        <li>Digit recognition analytics</li>
+        <li>Python backend integration</li>
+      </ul>
+    </div>
+
+    {/* CURRENT LIMITATIONS */}
+
+    <div className="project-status-card">
+      <div className="project-status-header">
+        <h3>Current Limitations</h3>
+        <span className="status-label warning">
+          <span className="status-dot warning"></span>
+          Limitations
+        </span>
+      </div>
+
+      <p>
+        The AI model currently focuses on handwritten digit
+        recognition from 0 to 9.
+      </p>
+
+      <ul className="digit-feature-list">
+        <li>Alphabet recognition is not supported.</li>
+        <li>Word recognition is not included.</li>
+        <li>Full sentence recognition is not supported.</li>
+        <li>
+          Prediction accuracy depends on handwriting quality
+          and image clarity.
+        </li>
+        <li>
+          Similar-looking digits may sometimes be misclassified.
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+      {/* =================================================
+          REAL-LIFE APPLICATIONS
+      ================================================= */}
+
+      <section className="dashboard-section">
+        <div className="section-title-row">
+          <div>
+            <span className="eyebrow">REAL-LIFE APPLICATIONS</span>
+
+            <h2>Where can this technology be used?</h2>
+
+            <p>
+              Examples of how handwritten numerical information
+              could be converted into digital data.
+            </p>
+          </div>
+        </div>
+
+        <div className="info-feature-grid">
+          {applications.map((item) => (
+            <InfoCard key={item.title} item={item} />
+          ))}
+        </div>
+      </section>
+
+      {/* =================================================
+          FUTURE SCOPE
+      ================================================= */}
+
+      <section className="dashboard-section">
+        <div className="section-title-row">
+          <div>
+            <span className="eyebrow">FUTURE SCOPE</span>
+
+            <h2>Advanced Digit Recognition</h2>
+
+            <p>
+              Planned improvements for the AI Handwritten
+              Digit Recognizer.
+            </p>
+          </div>
+        </div>
+
+        <div className="info-feature-grid">
+          <InfoCard
+            item={{
+              icon: Brain,
+              title: "Improved AI Accuracy",
+              text:
+                "Explore model improvements to recognize handwritten digits from 0 to 9 more accurately.",
+            }}
+          />
+
+          <InfoCard
+            item={{
+              icon: ScanText,
+              title: "Better Image Processing",
+              text:
+                "Improve preprocessing to handle unclear, tilted, or noisy handwritten digits.",
+            }}
+          />
+
+          <InfoCard
+            item={{
+              icon: Activity,
+              title: "Confidence Analysis",
+              text:
+                "Present prediction confidence clearly and help users understand model results.",
+            }}
+          />
+
+          <InfoCard
+            item={{
+              icon: FileSearch,
+              title: "Prediction Reports",
+              text:
+                "Explore reports containing recognized digits and their prediction results.",
+            }}
+          />
+
+          <InfoCard
+            item={{
+              icon: Cloud,
+              title: "Cloud Integration",
+              text:
+                "Deploy the application online so users can access it through a web browser.",
+            }}
+          />
+
+          <InfoCard
+            item={{
+              icon: Sparkles,
+              title: "AI Model Improvements",
+              text:
+                "Explore better training methods and datasets to improve digit recognition.",
+            }}
+          />
+        </div>
+      </section>
+
+      {/* =================================================
+          PROJECT DEVELOPMENT
+      ================================================= */}
+
+      <section className="development-section">
+        <div className="development-heading">
+          <span className="eyebrow">PROJECT DEVELOPMENT</span>
+
+          <h2>How We Built the AI Digit Recognizer</h2>
+
+          <p>
+            An overview of the development process, from
+            handwritten digit input to AI predictions.
+          </p>
+        </div>
+
+        <div className="development-grid">
+
+          <article className="development-card">
+            <span className="development-number">01</span>
+
+            <h3>Frontend Development</h3>
+
+            <p>
+              React and Vite are used to build an interactive
+              interface for drawing digits, uploading images,
+              and displaying predictions.
+            </p>
+
+            <span className="development-tag">
+              React · Vite · CSS
+            </span>
+          </article>
+
+          <article className="development-card">
+            <span className="development-number">02</span>
+
+            <h3>Backend Development</h3>
+
+            <p>
+              Python Flask receives digit images from the
+              frontend, processes prediction requests, and
+              returns the results.
+            </p>
+
+            <span className="development-tag">
+              Python · Flask · API
+            </span>
+          </article>
+
+          <article className="development-card">
+            <span className="development-number">03</span>
+
+            <h3>Image Preprocessing</h3>
+
+            <p>
+              The input image is processed and prepared
+              according to the trained model's input
+              requirements before prediction.
+            </p>
+
+            <span className="development-tag">
+              Image Processing · NumPy
+            </span>
+          </article>
+
+          <article className="development-card">
+            <span className="development-number">04</span>
+
+            <h3>AI Digit Prediction</h3>
+
+            <p>
+              The trained digit classification model analyzes
+              the processed image and predicts a digit from
+              0 to 9.
+            </p>
+
+            <span className="development-tag">
+              TensorFlow · AI Model
+            </span>
+          </article>
+
+          <article className="development-card">
+            <span className="development-number">05</span>
+
+            <h3>Testing and Validation</h3>
+
+            <p>
+              Drawing, image uploads, prediction results,
+              and error handling are tested to identify
+              incorrect predictions.
+            </p>
+
+            <span className="development-tag">
+              Testing · Debugging
+            </span>
+          </article>
+
+          <article className="development-card">
+            <span className="development-number">06</span>
+
+            <h3>Frontend and Backend Integration</h3>
+
+            <p>
+              The React frontend communicates with the
+              Python backend through an API to display
+              prediction results.
+            </p>
+
+            <span className="development-tag">
+              React + Python API
+            </span>
+          </article>
+
+        </div>
+      </section>
+
+    </div>
+  );
 }

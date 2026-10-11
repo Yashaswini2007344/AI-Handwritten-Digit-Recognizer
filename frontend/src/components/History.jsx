@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Search,
@@ -11,29 +10,69 @@ export default function History({
   history,
   setHistory,
   setActivePage,
+  onRefresh,
 }) {
   const [query, setQuery] = useState("");
 
-  const filteredHistory = history.filter((item) => {
+  const [clearing, setClearing] = useState(false);
+
+  const filteredHistory = (history || []).filter((item) => {
     const searchText = query.toLowerCase();
 
     return (
-      String(item.prediction)
+      String(item.prediction ?? "")
         .toLowerCase()
         .includes(searchText) ||
-      String(item.mode)
+      String(item.mode ?? "")
         .toLowerCase()
         .includes(searchText)
     );
   });
 
-  const clearAllHistory = () => {
+  // CLEAR HISTORY FROM SQLITE DATABASE
+  const clearAllHistory = async () => {
     const confirmed = window.confirm(
       "Are you sure you want to clear all recognition history?"
     );
 
-    if (confirmed) {
-      setHistory([]);
+    if (!confirmed || clearing) return;
+
+    setClearing(true);
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:5000/api/history",
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || "Failed to clear history."
+        );
+      }
+
+      // Refresh history from the database
+      if (onRefresh) {
+        await onRefresh();
+      } else {
+        setHistory([]);
+      }
+
+      setQuery("");
+
+      window.alert("History cleared successfully!");
+    } catch (error) {
+      console.error("Clear history error:", error);
+
+      window.alert(
+        "Could not clear history. Please make sure the Python backend is running."
+      );
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -69,15 +108,16 @@ export default function History({
         />
       </div>
 
+      {/* PAGE HEADING */}
       <div className="section-heading">
         <div>
           <span className="eyebrow">
             RECORDS
           </span>
 
-          <h2>
+          <h1 className="history-main-title">
             Recognition History
-          </h2>
+          </h1>
 
           <p>
             View and search your previous AI
@@ -85,17 +125,19 @@ export default function History({
           </p>
         </div>
 
+        {/* CLEAR ALL */}
         <button
           type="button"
           className="btn danger"
           onClick={clearAllHistory}
-          disabled={!history.length}
+          disabled={!history?.length || clearing}
         >
           <Trash2 size={15} />
-          Clear All
+          {clearing ? "Clearing..." : "Clear All"}
         </button>
       </div>
 
+      {/* SEARCH */}
       <div className="search-line">
         <Search size={17} />
 
@@ -109,14 +151,26 @@ export default function History({
         />
       </div>
 
+      {/* HISTORY TABLE */}
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Prediction</th>
-              <th>Mode</th>
-              <th>Confidence</th>
-              <th>Date & Time</th>
+              <th className="history-title">
+                Prediction
+              </th>
+
+              <th className="history-title">
+                Mode
+              </th>
+
+              <th className="history-title">
+                Confidence
+              </th>
+
+              <th className="history-title">
+                Date &amp; Time
+              </th>
             </tr>
           </thead>
 
@@ -129,7 +183,7 @@ export default function History({
                   </td>
 
                   <td>
-                    {item.mode}
+                    {item.mode || "Draw"}
                   </td>
 
                   <td>
@@ -148,7 +202,7 @@ export default function History({
                       }}
                     >
                       <Clock3 size={13} />
-                      {item.date}
+                      {item.date || item.created_at || "—"}
                     </span>
                   </td>
                 </tr>
@@ -171,4 +225,3 @@ export default function History({
     </div>
   );
 }
-
