@@ -41,7 +41,7 @@ export default function History({
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:5000/api/history",
+        "https://ai-handwritten-digit-recognizer.onrender.com/api/history",
         {
           method: "DELETE",
         }

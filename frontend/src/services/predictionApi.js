@@ -1,13 +1,13 @@
 
 const DIGIT_API_URL =
-  "http://127.0.0.1:5000/api/predict";
+  "https://ai-handwritten-digit-recognizer.onrender.com/api/predict"
 
 const MULTI_DIGIT_API_URL =
-  "http://127.0.0.1:5000/api/predict-multi-digit";
+"https://ai-handwritten-digit-recognizer.onrender.com/api/predict-multi-digit";
 
 
 const AUTOMATIC_NUMBER_EXTRACTION_API_URL =
-  "http://127.0.0.1:5000/api/extract-number-image";
+"https://ai-handwritten-digit-recognizer.onrender.com/api/extract-number-image";
 
 
 export async function predictImage(file, mode = "digit") {

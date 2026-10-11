@@ -16,7 +16,8 @@ import Feedback from "./pages/Feedback";
 import { predictImage } from "./services/predictionApi";
 import "./App.css";
 
-const API_BASE_URL = "http://127.0.0.1:5000";
+const API_BASE_URL =
+  "https://ai-handwritten-digit-recognizer.onrender.com";
 
 export default function App() {
   const [activePage, setActivePage] = useState("dashboard");
@@ -844,8 +845,9 @@ export default function App() {
                 <strong>Backend API</strong>
                 <p>Python Flask prediction API</p>
               </div>
-              <span className="feature-status">127.0.0.1:5000</span>
-            </div>
+             <span className="feature-status">
+                   ai-handwritten-digit-recognizer.onrender.com
+            </span>
 
             <div className="settings-item">
               <div>
