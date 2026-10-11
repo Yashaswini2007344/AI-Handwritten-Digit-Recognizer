@@ -845,9 +845,8 @@ export default function App() {
                 <strong>Backend API</strong>
                 <p>Python Flask prediction API</p>
               </div>
-             <span className="feature-status">
-                   ai-handwritten-digit-recognizer.onrender.com
-            </span>
+              <span className="feature-status">127.0.0.1:5000</span>
+            </div>
 
             <div className="settings-item">
               <div>
