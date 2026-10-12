@@ -44,15 +44,17 @@ CORS(app)
 # Digit Model
 # -------------------------------------------------
 
+
 DIGIT_MODEL_PATH = "digit_model.keras"
+
+print("Starting digit model loading...", flush=True)
+
 digit_model = tf.keras.models.load_model(
     DIGIT_MODEL_PATH,
     compile=False
 )
 
-
-print("AI digit model loaded successfully!")
-
+print("AI digit model loaded successfully!", flush=True)
 
     # =================================================
 # DATABASE HISTORY API
