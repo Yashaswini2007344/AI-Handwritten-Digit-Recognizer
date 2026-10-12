@@ -1061,10 +1061,10 @@ def predict_multi_digit():
                 digit_image.astype("float32") / 255.0
             ).reshape(1, 28, 28, 1)
 
-            scores = digit_model.predict(
+            scores = digit_model(
                 model_input,
-                verbose=0
-            )[0]
+                training=False
+            ).numpy()[0]
 
             digit = int(np.argmax(scores))
             confidence = float(scores[digit] * 100)
@@ -1213,10 +1213,10 @@ def extract_number_image():
                 digit_image.astype("float32") / 255.0
             ).reshape(1, 28, 28, 1)
 
-            scores = digit_model.predict(
+            scores = digit_model(
                 model_input,
-                verbose=0
-            )[0]
+                training=False
+            ).numpy()[0]
 
             predicted_digit = int(np.argmax(scores))
             confidence = float(scores[predicted_digit] * 100)
