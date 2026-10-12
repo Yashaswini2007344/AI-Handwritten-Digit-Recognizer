@@ -39,9 +39,10 @@ CORS(app)
 # -------------------------------------------------
 
 DIGIT_MODEL_PATH = "digit_model.keras"
-
 digit_model = tf.keras.models.load_model(
-    DIGIT_MODEL_PATH
+    DIGIT_MODEL_PATH,
+    compile=False
+)
 )
 
 print("AI digit model loaded successfully!")
