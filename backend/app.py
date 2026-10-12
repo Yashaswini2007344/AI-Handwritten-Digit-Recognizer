@@ -804,13 +804,13 @@ def predict():
         )
 
 
-        # =================================================
+       # =================================================
         # PREDICTION
         # =================================================
 
-       predictions = digit_model(
-           image_array,
-           training=False
+        predictions = digit_model(
+            image_array,
+            training=False
         ).numpy()[0]
 
 
