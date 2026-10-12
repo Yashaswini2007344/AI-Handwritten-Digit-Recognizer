@@ -1,6 +1,12 @@
 from database import create_table, save_history, get_history, clear_history
 from flask import Flask, request
 from flask_cors import CORS
+import os
+
+os.environ["TF_NUM_INTRAOP_THREADS"] = "1"
+os.environ["TF_NUM_INTEROP_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
+
 import tensorflow as tf
 import numpy as np
 import cv2
@@ -802,10 +808,10 @@ def predict():
         # PREDICTION
         # =================================================
 
-        predictions = digit_model.predict(
-            image_array,
-            verbose=0
-        )[0]
+       predictions = digit_model(
+           image_array,
+           training=False
+        ).numpy()[0]
 
 
         # =================================================
