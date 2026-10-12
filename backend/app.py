@@ -43,7 +43,7 @@ digit_model = tf.keras.models.load_model(
     DIGIT_MODEL_PATH,
     compile=False
 )
-)
+
 
 print("AI digit model loaded successfully!")
 
